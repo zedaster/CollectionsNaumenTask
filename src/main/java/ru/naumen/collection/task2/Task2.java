@@ -1,5 +1,8 @@
 package ru.naumen.collection.task2;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Дано:
  * <pre>
@@ -24,5 +27,30 @@ package ru.naumen.collection.task2;
  */
 public class Task2 {
 
-    // TODO
+    // Выбран HashMap для добавления по хэшу за O(1) и получения элемента за O(1)
+    private Map<Ticket, LunchType> lunchTypeMap = new HashMap<>();
+
+    /**
+     * Устанавливает ланч-набор для зрителя с билетом ticket
+     * Выполняется за O(1)
+     * @param ticket билет зрителя
+     * @param lunchType тип ланч-набора
+     */
+    public void setLunchType(Ticket ticket, LunchType lunchType) {
+        lunchTypeMap.put(ticket, lunchType);
+    }
+
+    /**
+     * Получает ланч-набор зрителя с билетом ticket
+     * Выполняется за O(1)
+     * @param ticket билет зрителя
+     * @return тип ланч-набора. Если зритель не покупал набор, вернется {@link LunchType#NO_LUNCH}
+     */
+    public LunchType getLunchType(Ticket ticket) {
+        LunchType type = lunchTypeMap.get(ticket);
+        if (type == null) {
+            return LunchType.NO_LUNCH;
+        }
+        return type;
+    }
 }

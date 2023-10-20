@@ -2,6 +2,7 @@ package ru.naumen.collection.task3;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * <p>Написать консольное приложение, которое принимает на вход произвольный текстовый файл в формате txt.
@@ -18,62 +19,50 @@ public class WarAndPeace {
     private static final Path WAR_AND_PEACE_FILE_PATH = Path.of("src/main/resources",
             "Лев_Толстой_Война_и_мир_Том_1,_2,_3,_4_(UTF-8).txt");
 
-    // Такая реализация НЕ работает
-    // Если, к примеру, слово "декабристов" встречается 2 раз, оно уже есть в bottom ("декабристов" - 1),
-    // то из bottom его придется удалить. Значений в bottom останется 9, десятое брать не откуда.
-    // Эта проблема может сделать итоговый списки неполными и неточными
-    // Следовательно при сортировке необходимо учитывать ВСЕ ранние значения, т.к. слово "декабристов" из примера
-    // могло встретиться и в самом начале.
+    /**
+     * Выводит на экран наиболее используемые (TOP) 10 слов и наименее используемые (LAST) 10 слов
+     * из романа Льва Толстого “Война и мир”
+     *
+     * Сложность алгоритма O(N + N*logN)
+     * @param args
+     */
     public static void main(String[] args) {
-        Map<String, Integer> map = new HashMap<>();
-        SortedSet<WordCounter> topCounterSet = new TreeSet<>(Comparator.reverseOrder());
-        SortedSet<WordCounter> bottomCounterSet = new TreeSet<>();
+        // Берем LinkedHashMap для обновления частоты слов за O(1)
+        // и быстрой итерации по всем элементам в следующем шаге
+        Map<String, Integer> map = new LinkedHashMap<>();
 
+        // За O(N) считываем слова
         WordParser wordParser = new WordParser(WAR_AND_PEACE_FILE_PATH);
         wordParser.forEachWord((word) -> {
-            int newCount;
             if (map.containsKey(word)) {
-                newCount = map.get(word) + 1;
-                map.put(word, newCount);
+                map.put(word, map.get(word) + 1);
             } else {
-                newCount = 1;
                 map.put(word, 1);
-            }
-
-            WordCounter newCounter = new WordCounter(word, newCount);
-            WordCounter oldCounter = new WordCounter(word, newCount - 1);
-            if (topCounterSet.size() < 10) {
-                topCounterSet.remove(oldCounter);
-                bottomCounterSet.remove(oldCounter);
-                topCounterSet.add(newCounter);
-                bottomCounterSet.add(newCounter);
-            } else {
-                if (topCounterSet.last().compareTo(newCounter) < 0) {
-                    topCounterSet.add(newCounter);
-                    topCounterSet.remove(oldCounter);
-                    if (topCounterSet.size() > 10) {
-                        topCounterSet.remove(topCounterSet.last());
-                    }
-                }
-                if (bottomCounterSet.last().compareTo(newCounter) > 0) {
-                    bottomCounterSet.add(newCounter);
-                    bottomCounterSet.remove(oldCounter);
-                    if (bottomCounterSet.size() > 10) {
-                        bottomCounterSet.remove(bottomCounterSet.last());
-                    }
-                }
             }
         });
 
-        System.out.println("Топ самых наиболее используемых слов:");
-        for (WordCounter counter : topCounterSet) {
-            System.out.println(counter.getWord() + " " + counter.getCount());
+        // Используя Stream, сортируем пары в map и заливаем их в List (Immutable ArrayList) за O(N*logN)
+        List<Map.Entry<String, Integer>> sortedEntries = map.entrySet()
+                .stream()
+                .sorted(Comparator
+                        .comparing(Map.Entry<String, Integer>::getValue, Comparator.reverseOrder())
+                        .thenComparing(Map.Entry::getKey))
+                .toList();
+
+        // Далее через subList за константное время получаем искомые топы
+        System.out.println("Топ-10 наиболее используемых слов:");
+        List<Map.Entry<String, Integer>> firstTenEntries = sortedEntries.subList(0, 10);
+        for (Map.Entry<String, Integer> entry : firstTenEntries) {
+            System.out.println(entry.getKey() + " " + entry.getValue());
         }
 
         System.out.println();
-        System.out.println("Топ самых наименее используемых слов:");
-        for (WordCounter counter : bottomCounterSet) {
-            System.out.println(counter.getWord() + " " + counter.getCount());
+        System.out.println("Топ-10 наименее используемых слов:");
+        int lastTenStartIndex = Math.max(sortedEntries.size() - 10, 0);
+        int lastTenEndIndex = sortedEntries.size();
+        List<Map.Entry<String, Integer>> lastTenEntries = sortedEntries.subList(lastTenStartIndex, lastTenEndIndex);
+        for (Map.Entry<String, Integer> entry : lastTenEntries) {
+            System.out.println(entry.getKey() + " " + entry.getValue());
         }
     }
 }
